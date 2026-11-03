@@ -1,0 +1,15 @@
+# ArduPilot SITL run folder (eeprom, logs, tlogs) and recorded flights
+runs/
+
+# colcon output
+vin_ws/build/
+vin_ws/install/
+vin_ws/log/
+
+# Python
+__pycache__/
+*.pyc
+
+# editors
+.vscode/
+.idea/

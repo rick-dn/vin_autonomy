@@ -1,0 +1,24 @@
+%YAML:1.0
+# Camera for iris_with_vio_camera (iris_warehouse_vio.sdf), mono only.
+# Values come from the Gazebo model, not from a calibration:
+#   - 640x480, 90 deg horizontal FOV -> fx = fy = 320, cx = 320, cy = 240
+#     (fx/fy as reported on /vio/camera/camera_info)
+#   - perfect pinhole, no distortion
+#   - camera link at 0.1 m forward, 0.05 m down from base_link; the VIO IMU
+#     sits at base_link with the same axes (x forward, y left, z up)
+#   - Gazebo camera looks along link +x; OpenVINS camera frame is z forward,
+#     x right, y down, so R_CtoI columns are: x_C = -y_I, y_C = -z_I, z_C = x_I
+
+cam0:
+  T_imu_cam: #rotation from camera to IMU R_CtoI, position of camera in IMU p_CinI
+    - [0.0, 0.0, 1.0, 0.10]
+    - [-1.0, 0.0, 0.0, 0.0]
+    - [0.0, -1.0, 0.0, -0.05]
+    - [0.0, 0.0, 0.0, 1.0]
+  cam_overlaps: []
+  camera_model: pinhole
+  distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
+  distortion_model: radtan
+  intrinsics: [319.9988, 319.9988, 320.0, 240.0] #fu, fv, cu, cv
+  resolution: [640, 480]
+  rostopic: /vio/camera/image
