@@ -42,6 +42,14 @@ Stress tests only mean something if every run flies the same path, so the flight
 
 The adapter's commands are fire-and-forget: `arm()` returns as soon as the request is sent, not when the drone is armed. So the script checks telemetry after every step and re-sends a command if nothing happens. Each step has a timeout; on a timeout it lands.
 
+## Getting OpenVINS to start, and to stay put
+
+Two config changes were needed once it was actually flying.
+
+It wouldn't initialise at first. OpenVINS starts from rest: it wants the drone still, then a clear jolt in the accelerometer. The default threshold is 1.5, and ArduPilot's smooth takeoff only reached about 0.62, so it waited forever and then saw the drone already moving and gave up. `init_imu_thresh` is now 0.3. OpenVINS has to be running before takeoff for this to work.
+
+Then it tracked the square well but ran away after landing, tens of metres within a minute while the drone sat on the floor. Turning on `try_zupt` fixed that. There's more on why in the maths notes.
+
 ## Start / stop script
 
 `start_vio_sim.sh --start` opens one terminal tab per process, in the same style as the older `start_all.sh`. ArduPilot runs from `runs/sitl` so its parameters and logs don't mix with other projects.

@@ -71,6 +71,18 @@ With one camera, the images on their own fix the shape of the motion but not its
 
 That's why OpenVINS waits for a "jerk" in the accelerometer before it initialises (`init_imu_thresh`), and why the takeoff matters. It's also why mono VIO is a good subject for this project: it has more ways to fail than stereo.
 
+## Zero velocity updates
+
+When the drone sits still, nothing moves in the image, so features have no parallax and can't be triangulated. The camera stops correcting the filter, and the IMU integration is left on its own. Position error from a small acceleration error grows with $t^2$, which is most likely what the runaway after landing was.
+
+A zero velocity update (`try_zupt`) tells the filter what it can't see for itself. When features move less than `zupt_max_disparity` (0.5 px), OpenVINS treats the drone as stopped, so the IMU should read only its biases and gravity:
+
+$$
+\omega_m - b_g \approx 0, \qquad a_m - b_a \approx -R^T g
+$$
+
+One catch for the stress tests: a frozen camera also has zero feature motion, so it could look like the drone stopped.
+
 ## What OpenVINS does with all this
 
 OpenVINS is an MSCKF, a Kalman filter that keeps a short sliding window of past camera poses (11 here, `max_clones`) instead of keeping every feature in the state. The IMU predicts forward between images. When a tracked feature has been seen from several poses in the window, it gets triangulated and used to correct all of those poses at once, then thrown away. A few long-lived features (`max_slam`) stay in the state as landmarks.

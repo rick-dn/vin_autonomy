@@ -12,17 +12,21 @@ Work in progress.
 - [x] Camera, IMU and ground truth available in ROS 2
 - [x] OpenVINS built and configured for the sim camera and IMU
 - [x] Repeatable scripted test flight
-- [ ] OpenVINS running on the test flight, compared with ground truth
-- [ ] Baseline accuracy (ATE / RPE)
+- [x] OpenVINS tracking the test flight (checked by eye in RViz, not measured yet)
+- [ ] Evaluation tool and baseline accuracy (ATE / RPE)
 - [ ] Stress tests: time offset, IMU noise, dropped frames, blur, darkness
-- [ ] Health monitor node (C++)
-- [ ] Monitor validation on the stress tests
+- [ ] Downward rangefinder fused inside OpenVINS
+- [ ] Loosely coupled ESKF on top of OpenVINS
+- [ ] External nav into ArduPilot's EKF3, flying with GPS off
+- [ ] Health monitor node and validation on the stress tests
 
 ## Layout
 
 ```
 scripts/
   start_vio_sim.sh          start / stop the whole sim in terminal tabs
+sim/
+  models/, worlds/          the drone model and warehouse world
 vin_ws/
   config/openvins_sim/      OpenVINS config for the sim camera and IMU
   src/gz_imu_bridge/        Gazebo IMU -> ROS 2 (see docs for why this exists)
@@ -42,8 +46,10 @@ docs/
 Some pieces live outside this repo, in the `udl_aakash` workspace on my machine, and the scripts point at them by absolute path:
 
 - ArduPilot source and build: `udl_aakash/tools/ardupilot`
-- `ardupilot_gazebo` plugin, plus the model `iris_with_vio_camera` and world `iris_warehouse_vio.sdf` in its `models/` and `worlds/` folders
+- `ardupilot_gazebo` plugin and its `iris_with_ardupilot` model
 - OpenVINS workspace: `udl_aakash/vio_ws`
+
+The drone model and world are in `sim/`. Gazebo needs to find them, so either copy them into the `models/` and `worlds/` folders of `ardupilot_gazebo` (that's where my setup runs them from) or add `sim/models` and `sim/worlds` to `GZ_SIM_RESOURCE_PATH`. The warehouse also pulls a few models from Gazebo Fuel the first time it loads.
 
 If you're setting this up elsewhere, change the paths at the top of `scripts/start_vio_sim.sh`.
 
@@ -66,7 +72,7 @@ ros2 topic list | grep vio
 # /vio/camera/image  /vio/camera/camera_info  /vio/imu  /vio/ground_truth/odom
 ```
 
-Start OpenVINS with the sim config (in another terminal):
+Start OpenVINS with the sim config, in another terminal, while the drone is still on the ground. It initialises on the takeoff, so if it starts mid-flight it won't initialise at all:
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -90,9 +96,11 @@ Stop everything and close the tabs:
 bash scripts/start_vio_sim.sh --stop
 ```
 
-OpenVINS doesn't always exit on Ctrl-C, so check it's gone (`pgrep -l run_subscribe`) and kill it if needed.
+`--stop` doesn't touch OpenVINS. Stop it with Ctrl-C in its own terminal, and if it hangs, which it sometimes does, use `pkill -x run_subscribe_m`.
 
 ## Notes
 
 - The sim runs at roughly 0.5x real time on my laptop (i7-13620H, RTX 3050). ArduPilot runs in lock-step, so results are still correct, just slower.
 - `vin_ws/src/vio_flight/mavros_adapter.py` is copied unchanged from my `ardupilot_autonomy` project.
+
+Co-authored with [Claude](https://claude.ai).
