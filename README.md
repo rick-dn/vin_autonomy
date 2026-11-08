@@ -1,4 +1,4 @@
-# udl_disha
+# vin_autonomy
 
 Visual-inertial odometry (VIO) on a simulated quadcopter, and what happens to it when things go wrong.
 
