@@ -83,6 +83,35 @@ $$
 
 One catch for the stress tests: a frozen camera also has zero feature motion, so it could look like the drone stopped.
 
+## Scoring: alignment, ATE and RPE
+
+OpenVINS's world frame starts where it initialises, with a heading it picks itself. Gravity pins down roll and pitch, but position and heading are unobservable from a camera and an IMU alone. So before comparing to ground truth, the estimate gets one rotation about the vertical, $R_z(\psi)$, and one shift $t$, chosen to minimise
+
+$$
+\sum_i \left\| R_z(\psi)\, p^{\text{est}}_i + t - p^{\text{gt}}_i \right\|^2
+$$
+
+With both point sets centred (subtract their means, giving $e_i$ and $g_i$), the best heading has a closed form:
+
+$$
+\psi = \operatorname{atan2}\!\Big(\sum_i e_{x,i} g_{y,i} - e_{y,i} g_{x,i},\ \sum_i e_{x,i} g_{x,i} + e_{y,i} g_{y,i}\Big)
+$$
+
+and then $t = \bar p^{\text{gt}} - R_z(\psi)\, \bar p^{\text{est}}$. Roll and pitch aren't aligned away, because a VIO that gets gravity wrong should be penalised for it.
+
+**ATE** (absolute trajectory error) is the RMSE of the aligned position error, $\sqrt{\tfrac1N \sum \| p^{\text{al}}_i - p^{\text{gt}}_i \|^2}$, plus the same for the rotation angle between the estimated and true orientation. ATE is a single number for the whole run. It also depends on when the error happened, because an early error gets carried along for the rest of the flight.
+
+**RPE** (relative pose error) looks at short pieces instead. For poses $i$ and $j$ one second apart, it compares how far the estimate says the drone moved with how far it really moved, both measured in the body frame at $i$:
+
+$$
+\Delta^{\text{est}} = R_i^{\text{est}\,T}\big(p^{\text{est}}_j - p^{\text{est}}_i\big), \qquad
+e_{ij} = \big\| \Delta^{\text{est}} - \Delta^{\text{gt}} \big\|
+$$
+
+RPE doesn't need any alignment, and it shows local drift rate, which is what a fault would make worse.
+
+**Scale error.** A mono VIO that gets scale wrong draws the right shape at the wrong size. To measure that, a separate similarity fit $p^{\text{gt}} \approx s R\, p^{\text{est}} + t$ is solved with Umeyama's SVD method, and $s - 1$ is reported. It is reported only and not applied to the ATE, so a scale error still counts as error.
+
 ## What OpenVINS does with all this
 
 OpenVINS is an MSCKF, a Kalman filter that keeps a short sliding window of past camera poses (11 here, `max_clones`) instead of keeping every feature in the state. The IMU predicts forward between images. When a tracked feature has been seen from several poses in the window, it gets triangulated and used to correct all of those poses at once, then thrown away. A few long-lived features (`max_slam`) stay in the state as landmarks.

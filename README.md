@@ -12,8 +12,10 @@ Work in progress.
 - [x] Camera, IMU and ground truth available in ROS 2
 - [x] OpenVINS built and configured for the sim camera and IMU
 - [x] Repeatable scripted test flight
-- [x] OpenVINS tracking the test flight (checked by eye in RViz, not measured yet)
-- [ ] Evaluation tool and baseline accuracy (ATE / RPE)
+- [x] OpenVINS tracking the test flight
+- [x] Evaluation tool: record a run, score it against ground truth (ATE / RPE / scale)
+- [ ] Baseline accuracy over a set of flights (first square: 3 cm ATE, see below)
+- [ ] Bag record / replay with fault injection
 - [ ] Stress tests: time offset, IMU noise, dropped frames, blur, darkness
 - [ ] Downward rangefinder fused inside OpenVINS
 - [ ] Loosely coupled ESKF on top of OpenVINS
@@ -31,6 +33,8 @@ vin_ws/
   config/openvins_sim/      OpenVINS config for the sim camera and IMU
   src/gz_imu_bridge/        Gazebo IMU -> ROS 2 (see docs for why this exists)
   src/vio_flight/           scripted test flight over MAVROS
+  src/vio_eval/             record a run, score it against ground truth
+runs/                       sim logs and recorded runs (not in git)
 docs/
   how_it_works.md           how the pieces fit together
   maths.md                  the bits of maths behind the config
@@ -82,6 +86,13 @@ ros2 launch ov_msckf subscribe.launch.py \
   max_cameras:=1 use_stereo:=false rviz_enable:=true
 ```
 
+To score the flight, start the recorder in a third terminal before taking off. It saves to `runs/eval/<name>/`:
+
+```bash
+cd vin_ws/src/vio_eval
+python3 record_run.py --name square_01
+```
+
 Fly the test pattern, a 2 m square at 1.5 m facing the shelves:
 
 ```bash
@@ -90,6 +101,15 @@ python3 vio_flight.py                       # defaults
 python3 vio_flight.py --side 3 --loops 2    # bigger square, twice
 ```
 
+Once it has landed and disarmed, Ctrl-C the recorder (before stopping OpenVINS), then score the run:
+
+```bash
+cd vin_ws/src/vio_eval
+python3 score_run.py square_01
+```
+
+This prints ATE, RPE and scale error, and writes `metrics.json` and `score.png` into the run folder. The scored section runs from OpenVINS initialising to the disarm after landing.
+
 Stop everything and close the tabs:
 
 ```bash
@@ -97,6 +117,16 @@ bash scripts/start_vio_sim.sh --stop
 ```
 
 `--stop` doesn't touch OpenVINS. Stop it with Ctrl-C in its own terminal, and if it hangs, which it sometimes does, use `pkill -x run_subscribe_m`.
+
+## Results so far
+
+First clean run (`square_01`: takeoff, 2 m square, landing; 11.7 m path, 26.5 s):
+
+| ATE position | ATE rotation | RPE (1 s) | Scale error | Error at landing |
+|---|---|---|---|---|
+| 0.030 m RMSE | 0.42 deg | 0.019 m / 0.13 deg | +0.9% | 0.020 m |
+
+That's with a perfect sim camera and IMU, so it's a best case. The interesting numbers will come from the stress tests.
 
 ## Notes
 

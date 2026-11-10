@@ -50,6 +50,23 @@ It wouldn't initialise at first. OpenVINS starts from rest: it wants the drone s
 
 Then it tracked the square well but ran away after landing, tens of metres within a minute while the drone sat on the floor. Turning on `try_zupt` fixed that. There's more on why in the maths notes.
 
+## Scoring a run
+
+Scoring happens in two halves, so a flight only has to be flown once and can be re-scored as the scoring changes.
+
+`record_run.py` runs during the flight and writes four plain text files: the OpenVINS pose, the Gazebo ground truth (both in TUM format, `t x y z qx qy qz qw`), OpenVINS's own position and orientation variances, and every arm / mode change from MAVROS. Everything is stamped in sim time from the message headers. MAVROS stamps with the wall clock, which is useless here because the sim runs at about half speed, so mode changes are tagged with the latest ground truth time instead.
+
+`score_run.py` runs afterwards:
+
+1. It crops to the part worth scoring, from OpenVINS initialising to the disarm after landing. The LAND mode event isn't a good end point: ArduPilot hovers for several seconds after it before descending.
+2. Ground truth is at 100 Hz and the estimate at 30 Hz, so ground truth is interpolated to each estimate time.
+3. OpenVINS starts its own world frame wherever it initialises, with an arbitrary heading. On the first run it came out turned almost exactly 90 degrees from Gazebo. So the estimate is rotated about the vertical and shifted to best fit the ground truth before comparing.
+4. It reports the position and rotation error (ATE), the error in motion over one second windows (RPE), the scale error and the error at landing. It also plots the top view, the height, and the error next to OpenVINS's own 3-sigma.
+
+The maths is in the maths notes.
+
+The first run gave 3 cm ATE. Most of that comes from a 7 cm dip in height just after takeoff. OpenVINS's 3-sigma sits around 26 cm, roughly ten times the real error. It thinks it's much worse than it is, which fits with telling it the IMU is as noisy as EuRoC's when the sim IMU is perfect.
+
 ## Start / stop script
 
 `start_vio_sim.sh --start` opens one terminal tab per process, in the same style as the older `start_all.sh`. ArduPilot runs from `runs/sitl` so its parameters and logs don't mix with other projects.
