@@ -118,15 +118,28 @@ bash scripts/start_vio_sim.sh --stop
 
 `--stop` doesn't touch OpenVINS. Stop it with Ctrl-C in its own terminal, and if it hangs, which it sometimes does, use `pkill -x run_subscribe_m`.
 
+## Goal so far
+
+Get monocular visual-inertial odometry tracking a drone in a realistic SITL setup, and measure how accurate it is.
+
 ## Results so far
 
-First clean run (`square_01`: takeoff, 2 m square, landing; 11.7 m path, 26.5 s):
+- **A sim drone built for VIO.** ArduPilot SITL quadcopter in a Gazebo Harmonic warehouse, with a fixed forward global-shutter camera (640x480, 30 Hz), a dedicated 200 Hz IMU and ground truth, on a new model without touching the existing ones.
+- **Sensors in ROS 2.** Camera, IMU and ground truth all come through. That needed a custom IMU bridge, because the installed bridge zeroed the accelerometer.
+- **OpenVINS working on the drone.** Camera intrinsics and camera-IMU extrinsics worked out by hand. Initialisation fixed (ArduPilot's smooth takeoff never triggered it), and tens of metres of drift after landing fixed with zero-velocity updates.
+- **A repeatable test flight.** Scripted takeoff, 2 m square and landing over MAVROS, with retries and safe aborts.
+- **An evaluation tool.** A recorder saves the estimate, ground truth, covariance and flight events in sim time. A scorer aligns the frames and reports ATE, RPE and scale error, with plots.
+- **Baseline accuracy** on the first clean run (`square_01`: takeoff, 2 m square, landing; 11.7 m path, 26.5 s):
 
-| ATE position | ATE rotation | RPE (1 s) | Scale error | Error at landing |
-|---|---|---|---|---|
-| 0.030 m RMSE | 0.42 deg | 0.019 m / 0.13 deg | +0.9% | 0.020 m |
+  | ATE position | ATE rotation | RPE (1 s) | Scale error | Error at landing |
+  |---|---|---|---|---|
+  | 0.030 m RMSE | 0.42 deg | 0.019 m / 0.13 deg | +0.9% | 0.020 m |
 
-That's with a perfect sim camera and IMU, so it's a best case. The interesting numbers will come from the stress tests.
+  That's with a perfect sim camera and IMU, so it's a best case.
+- **A finding.** OpenVINS's own 3-sigma was about 10x the real error. The filter misjudges how much it can trust itself, which matters for anything that relies on its covariance.
+- **One-command sim.** Start and stop scripts for the whole sim, plus docs on how it works and the maths behind it.
+
+Stack: ROS 2 Humble, Gazebo Harmonic, ArduPilot SITL, MAVROS, OpenVINS, Python.
 
 ## Notes
 
