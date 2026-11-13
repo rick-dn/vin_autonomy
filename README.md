@@ -35,6 +35,7 @@ vin_ws/
   src/vio_flight/           scripted test flight over MAVROS
   src/vio_eval/             record a run, score it against ground truth
 runs/                       sim logs and recorded runs (not in git)
+results/                    plots and numbers worth keeping, per stage
 docs/
   how_it_works.md           how the pieces fit together
   maths.md                  the bits of maths behind the config
@@ -135,7 +136,9 @@ Get monocular visual-inertial odometry tracking a drone in a realistic SITL setu
   |---|---|---|---|---|
   | 0.030 m RMSE | 0.42 deg | 0.019 m / 0.13 deg | +0.9% | 0.020 m |
 
-  That's with a perfect sim camera and IMU, so it's a best case.
+  That's with a perfect sim camera and IMU, so it's a best case. More in [results/baseline](results/baseline/).
+
+  ![square_01 baseline](results/baseline/square_01_score.png)
 - **A finding.** OpenVINS's own 3-sigma was about 10x the real error. The filter misjudges how much it can trust itself, which matters for anything that relies on its covariance.
 - **One-command sim.** Start and stop scripts for the whole sim, plus docs on how it works and the maths behind it.
 

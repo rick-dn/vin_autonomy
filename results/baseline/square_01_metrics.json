@@ -1,0 +1,21 @@
+{
+  "run": "square_01",
+  "scored_from_s": 45.475,
+  "scored_to_s": 72.007,
+  "duration_s": 26.532000000000004,
+  "num_poses": 805,
+  "path_length_m": 11.66576455762397,
+  "align_yaw_deg": 89.45626614359546,
+  "ate_rmse_m": 0.030303408179551045,
+  "ate_mean_m": 0.027489543519869427,
+  "ate_median_m": 0.02348834237030317,
+  "ate_max_m": 0.06293151425349974,
+  "ate_rot_rmse_deg": 0.41699730270477997,
+  "rpe_dt_s": 1.0,
+  "rpe_trans_rmse_m": 0.018864929104914694,
+  "rpe_rot_rmse_deg": 0.1269617372052529,
+  "scale": 1.0088443107443044,
+  "scale_error_pct": 0.8844310744304362,
+  "final_error_m": 0.019857611078925884,
+  "final_error_pct_of_path": 0.17022125708810287
+}
